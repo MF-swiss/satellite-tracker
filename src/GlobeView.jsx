@@ -4,11 +4,11 @@ import * as THREE from "three";
 import * as satellite from "satellite.js";
 import { Card } from "./components/ui/card"; 
 import { Button } from "./components/ui/button";
-import { ScrollArea } from "../components/ui/scroll-area";
+import { ScrollArea } from "./components/ui/scroll-area";
 import { Sheet, SheetContent, SheetTrigger } from "./components/ui/sheet";
 
 
-export default function GlobeView() {
+export default function GlobePage() {
   const ref = useRef();
 
   const [selectedSat, setSelectedSat] = useState(null);
@@ -211,152 +211,162 @@ export default function GlobeView() {
     }
   }
 
-    return (
-    <div className="relative w-full h-full">
-        {/* Globe */}
-        <div ref={ref} className="absolute inset-0" />
+  return (
+  <div className="relative w-full h-full overflow-hidden">
 
-        {/* Favoriten-Sidebar (Desktop) */}
-        <Card className="hidden lg:flex flex-col gap-2 absolute left-4 top-4 w-64 max-h-[80vh] bg-background/80 backdrop-blur border border-border">
-        <div className="px-3 pt-3 pb-1 font-semibold text-sm flex items-center gap-2">
-            <span>⭐ Favoriten</span>
-            <span className="ml-auto text-xs text-muted-foreground">
-            {favorites.length} ausgewählt
-            </span>
-        </div>
+    {/* Globe Canvas */}
+    <div
+      ref={ref}
+      className="absolute inset-0 z-0"
+    />
 
-        <ScrollArea className="px-2 pb-3">
-            {favorites.length === 0 && (
-            <div className="text-xs text-muted-foreground px-2 py-1">
-                Noch keine Favoriten. Wähle einen Satelliten im Popup.
+    {/* Favoriten-Sidebar (Desktop) */}
+    <Card className="hidden lg:flex flex-col gap-2 absolute left-4 top-4 w-64 max-h-[80vh] bg-background/80 backdrop-blur border border-border z-20">
+      <div className="px-3 pt-3 pb-1 font-semibold text-sm flex items-center gap-2">
+        <span>⭐ Favoriten</span>
+        <span className="ml-auto text-xs text-muted-foreground">
+          {favorites.length} ausgewählt
+        </span>
+      </div>
+
+      <ScrollArea className="px-2 pb-3">
+        {favorites.length === 0 && (
+          <div className="text-xs text-muted-foreground px-2 py-1">
+            Noch keine Favoriten. Wähle einen Satelliten im Popup.
+          </div>
+        )}
+
+        {favorites.map(noradId => {
+          const meta = [...satMeta.current.values()].find(m => m.noradId === noradId)
+          if (!meta) return null
+
+          return (
+            <div
+              key={noradId}
+              className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-xs"
+              onClick={() => focusFavorite(noradId)}
+            >
+              <div className="flex flex-col">
+                <span className="font-medium truncate max-w-[140px]">
+                  {meta.name}
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  NORAD {noradId}
+                </span>
+              </div>
+
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-amber-400"
+                onClick={e => {
+                  e.stopPropagation()
+                  toggleFavorite(noradId)
+                }}
+              >
+                ✕
+              </Button>
             </div>
-            )}
+          )
+        })}
+      </ScrollArea>
+    </Card>
 
-            {favorites.map(noradId => {
-            const meta = [...satMeta.current.values()].find(m => m.noradId === noradId);
-            if (!meta) return null;
+    {/* Favoriten-Sidebar (Mobile) */}
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button
+          size="sm"
+          variant="outline"
+          className="lg:hidden absolute left-4 top-4 z-30 bg-background/80 backdrop-blur"
+        >
+          ⭐ Favoriten
+        </Button>
+      </SheetTrigger>
+
+      <SheetContent side="left" className="w-64 p-3">
+        <div className="font-semibold text-sm mb-2">Favoriten</div>
+
+        <ScrollArea className="h-[70vh]">
+          {favorites.length === 0 && (
+            <div className="text-xs text-muted-foreground px-1 py-1">
+              Noch keine Favoriten.
+            </div>
+          )}
+
+          {favorites.map(noradId => {
+            const meta = [...satMeta.current.values()].find(m => m.noradId === noradId)
+            if (!meta) return null
 
             return (
-                <div
+              <div
                 key={noradId}
                 className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-xs"
                 onClick={() => focusFavorite(noradId)}
-                >
+              >
                 <div className="flex flex-col">
-                    <span className="font-medium truncate max-w-[140px]">
+                  <span className="font-medium truncate max-w-[140px]">
                     {meta.name}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
                     NORAD {noradId}
-                    </span>
+                  </span>
                 </div>
+
                 <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-amber-400"
-                    onClick={e => {
-                    e.stopPropagation();
-                    toggleFavorite(noradId);
-                    }}
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-amber-400"
+                  onClick={e => {
+                    e.stopPropagation()
+                    toggleFavorite(noradId)
+                  }}
                 >
-                    ✕
+                  ✕
                 </Button>
-                </div>
-            );
-            })}
+              </div>
+            )
+          })}
         </ScrollArea>
-        </Card>
+      </SheetContent>
+    </Sheet>
 
-        {/* Favoriten-Sidebar (Mobile: Sheet) */}
-        <Sheet>
-        <SheetTrigger asChild>
-            <Button
+    {/* Popup rechts */}
+    {selectedSat && (
+      <Card className="absolute right-4 top-4 max-w-xs bg-background/85 backdrop-blur border border-border text-sm z-20">
+        <div className="px-3 pt-3 pb-1">
+          <div className="font-semibold text-sm truncate">
+            {selectedSat.name}
+          </div>
+          <div className="text-xs text-muted-foreground">
+            NORAD ID: {selectedSat.noradId}
+          </div>
+        </div>
+
+        <div className="px-3 pb-2 flex gap-2">
+          <Button
             size="sm"
-            variant="outline"
-            className="lg:hidden absolute left-4 top-4 z-10 bg-background/80 backdrop-blur"
-            >
-            ⭐ Favoriten
-            </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="w-64 p-3">
-            <div className="font-semibold text-sm mb-2">Favoriten</div>
-            <ScrollArea className="h-[70vh]">
-            {favorites.length === 0 && (
-                <div className="text-xs text-muted-foreground px-1 py-1">
-                Noch keine Favoriten.
-                </div>
-            )}
-            {favorites.map(noradId => {
-                const meta = [...satMeta.current.values()].find(m => m.noradId === noradId);
-                if (!meta) return null;
+            className="text-xs"
+            variant={favorites.includes(selectedSat.noradId) ? "default" : "outline"}
+            onClick={() => toggleFavorite(selectedSat.noradId)}
+          >
+            {favorites.includes(selectedSat.noradId) ? "★ Favorit" : "☆ Favorit"}
+          </Button>
 
-                return (
-                <div
-                    key={noradId}
-                    className="flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-accent cursor-pointer text-xs"
-                    onClick={() => focusFavorite(noradId)}
-                >
-                    <div className="flex flex-col">
-                    <span className="font-medium truncate max-w-[140px]">
-                        {meta.name}
-                    </span>
-                    <span className="text-[10px] text-muted-foreground">
-                        NORAD {noradId}
-                    </span>
-                    </div>
-                    <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-amber-400"
-                    onClick={e => {
-                        e.stopPropagation();
-                        toggleFavorite(noradId);
-                    }}
-                    >
-                    ✕
-                    </Button>
-                </div>
-                );
-            })}
-            </ScrollArea>
-        </SheetContent>
-        </Sheet>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="text-xs ml-auto"
+            onClick={() => {
+              followSatRef.current = null
+              setSelectedSat(null)
+            }}
+          >
+            Schließen
+          </Button>
+        </div>
+      </Card>
+    )}
 
-        {/* Popup rechts (shadcn Card) */}
-        {selectedSat && (
-        <Card className="absolute right-4 top-4 max-w-xs bg-background/85 backdrop-blur border border-border text-sm">
-            <div className="px-3 pt-3 pb-1">
-            <div className="font-semibold text-sm truncate">
-                {selectedSat.name}
-            </div>
-            <div className="text-xs text-muted-foreground">
-                NORAD ID: {selectedSat.noradId}
-            </div>
-            </div>
-
-            <div className="px-3 pb-2 flex gap-2">
-            <Button
-                size="sm"
-                className="text-xs"
-                variant={favorites.includes(selectedSat.noradId) ? "default" : "outline"}
-                onClick={() => toggleFavorite(selectedSat.noradId)}
-            >
-                {favorites.includes(selectedSat.noradId) ? "★ Favorit" : "☆ Favorit"}
-            </Button>
-            <Button
-                size="sm"
-                variant="ghost"
-                className="text-xs ml-auto"
-                onClick={() => {
-                followSatRef.current = null;
-                setSelectedSat(null);
-                }}
-            >
-                Schließen
-            </Button>
-            </div>
-        </Card>
-        )}
-    </div>
-    );
-  }
+  </div>
+)

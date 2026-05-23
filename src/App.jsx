@@ -1,13 +1,10 @@
-import GlobeView from "./GlobeView";
+import GlobeView from "./GlobeView"
+import { AppLayout } from "./components/layout/AppLayout"
 
 export default function App() {
   return (
-    <div style={{
-      width: "100vw",
-      height: "100vh",
-      overflow: "hidden"
-    }}>
+    <AppLayout>
       <GlobeView />
-    </div>
-  );
+    </AppLayout>
+  )
 }
