@@ -1,26 +1,25 @@
-import { ThemeToggle } from "./ThemeToggle"
-import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet"
-import { Button } from "@/components/ui/button"
+import { Navbar } from "./Navbar"
 import { Sidebar } from "./Sidebar"
 
-export function Navbar() {
+export function AppLayout({ children }) {
   return (
-    <header className="w-full h-14 border-b bg-background/80 backdrop-blur flex items-center px-4 justify-between">
-      <div className="font-semibold text-lg">🛰️ Satellite Tracker</div>
+    <div className="w-full h-full flex flex-col bg-[var(--cyber-bg)] text-[var(--cyber-text)]">
 
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button variant="outline" size="sm" className="lg:hidden">
-            ☰
-          </Button>
-        </SheetTrigger>
+      {/* TOP NAVBAR */}
+      <Navbar />
 
-        <SheetContent side="left" className="w-64 p-4">
-          <Sidebar mobile />
-        </SheetContent>
-      </Sheet>
+      {/* MAIN AREA */}
+      <div className="flex flex-1 overflow-hidden">
 
-      <ThemeToggle />
-    </header>
+        {/* LEFT SIDEBAR */}
+        <Sidebar />
+
+        {/* PAGE CONTENT */}
+        <main className="flex-1 relative overflow-hidden">
+          {children}
+        </main>
+
+      </div>
+    </div>
   )
 }

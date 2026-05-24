@@ -1,23 +1,20 @@
-import { useEffect, useState } from "react"
-import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
-export function ThemeToggle() {
-  const [theme, setTheme] = useState(
-    localStorage.getItem("theme") || "dark"
-  )
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark")
-    localStorage.setItem("theme", theme)
-  }, [theme])
-
+export function Sidebar() {
   return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-    >
-      {theme === "dark" ? "🌙" : "☀️"}
-    </Button>
+    <aside className="hidden lg:flex flex-col w-64 h-full 
+      bg-[var(--cyber-panel)] border-r border-[var(--cyber-border)]
+      backdrop-blur-xl shadow-[var(--cyber-glow)] text-[var(--cyber-text)]">
+
+      <div className="p-4 font-semibold tracking-wide text-cyan-300">
+        🛰️ SAT‑TRACKER
+      </div>
+
+      <nav className="flex flex-col gap-2 px-4 text-sm">
+        <a className="hover:text-cyan-300 transition">🌍 Globe</a>
+        <a className="hover:text-cyan-300 transition">⭐ Favoriten</a>
+        <a className="hover:text-cyan-300 transition">⚙️ Einstellungen</a>
+      </nav>
+    </aside>
   )
 }

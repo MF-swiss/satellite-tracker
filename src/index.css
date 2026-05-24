@@ -1,7 +1,67 @@
+/* -----------------------------------------------------------
+   TAILWIND CORE
+----------------------------------------------------------- */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* -----------------------------------------------------------
+   GLOBAL DARK CYBER THEME VARIABLES
+----------------------------------------------------------- */
+:root {
+  --cyber-bg: #0a0f14;
+  --cyber-panel: rgba(10, 20, 30, 0.6);
+  --cyber-border: rgba(0, 255, 255, 0.15);
+  --cyber-glow: 0 0 20px rgba(0, 255, 255, 0.15);
+  --cyber-text: #d7faff;
+
+  --cyber-accent: #00eaff;
+  --cyber-accent-soft: rgba(0, 234, 255, 0.1);
+}
+
+/* -----------------------------------------------------------
+   GLOBAL RESET
+----------------------------------------------------------- */
 html, body, #root {
   margin: 0;
   padding: 0;
-  width: 100vw;
-  height: 100vh;
+  width: 100%;
+  height: 100%;
+  background: var(--cyber-bg);
+  color: var(--cyber-text);
   overflow: hidden;
+  font-family: 'Inter', sans-serif;
+}
+
+/* Remove default focus outlines */
+*:focus {
+  outline: none;
+}
+
+/* -----------------------------------------------------------
+   SCROLLBAR (CYBER STYLE)
+----------------------------------------------------------- */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--cyber-accent);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #00ffff;
+}
+
+/* -----------------------------------------------------------
+   TEXT SELECTION
+----------------------------------------------------------- */
+::selection {
+  background: var(--cyber-accent);
+  color: black;
 }
