@@ -52,6 +52,10 @@ export default function GlobeView() {
   useEffect(() => {
     if (!ref.current) return
 
+    ref.current.innerHTML = ""
+    ref.current.style.position = "relative"
+    ref.current.style.overflow = "hidden"
+
     const globe = Globe()(ref.current)
       .globeImageUrl("//unpkg.com/three-globe/example/img/earth-blue-marble.jpg")
       .backgroundImageUrl("//unpkg.com/three-globe/example/img/night-sky.png")
@@ -60,6 +64,12 @@ export default function GlobeView() {
     const camera = globe.camera()
     const renderer = globe.renderer()
     const R = globe.getGlobeRadius()
+
+    renderer.domElement.style.position = "absolute"
+    renderer.domElement.style.inset = "0"
+    renderer.domElement.style.width = "100%"
+    renderer.domElement.style.height = "100%"
+    renderer.domElement.style.display = "block"
 
     const orbitGroup = new THREE.Group()
     const satGroup = new THREE.Group()
@@ -130,7 +140,7 @@ export default function GlobeView() {
               const time = new Date(now.getTime() + m * 60000)
               const gmst = satellite.gstime(time)
               const pv = satellite.propagate(satrec, time)
-              if (!pv.position) continue
+              if (!pv?.position) continue
 
               const gd = satellite.eciToGeodetic(pv.position, gmst)
               const lat = satellite.radiansToDegrees(gd.latitude)
@@ -194,7 +204,7 @@ export default function GlobeView() {
               const time = new Date()
               const gmst = satellite.gstime(time)
               const pv = satellite.propagate(satrec, time)
-              if (!pv.position) return
+              if (!pv?.position) return
 
               const gd = satellite.eciToGeodetic(pv.position, gmst)
               const lat = satellite.radiansToDegrees(gd.latitude)
@@ -288,7 +298,17 @@ export default function GlobeView() {
   // UI RENDER
   // ------------------------------------------------------------
   return (
-    <div className="relative w-full h-full overflow-hidden flex min-h-0">
+    <div
+      className="relative w-full h-full overflow-hidden lg:grid lg:grid-cols-[20vw_minmax(0,1fr)] min-h-0"
+      style={{
+        display: "grid",
+        gridTemplateColumns: "clamp(260px, 20vw, 360px) minmax(0, 1fr)",
+        width: "100%",
+        height: "100%",
+        minHeight: 0,
+        overflow: "hidden",
+      }}
+    >
 
       <Sidebar
         satCatalog={satCatalog}
@@ -300,8 +320,11 @@ export default function GlobeView() {
       />
 
       {/* Globe */}
-      <div className="relative flex-1 min-w-0 h-full overflow-hidden">
-        <div ref={ref} className="w-full h-full z-0" />
+      <div
+        className="relative min-w-0 h-full overflow-hidden"
+        style={{ position: "relative", minWidth: 0, minHeight: 0, overflow: "hidden" }}
+      >
+        <div ref={ref} className="w-full h-full z-0" style={{ width: "100%", height: "100%", position: "relative" }} />
 
       {/* Popup rechts */}
       {selectedSat && (

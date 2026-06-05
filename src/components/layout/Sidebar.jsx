@@ -47,11 +47,33 @@ export function Sidebar({
   }, [normalizedQuery, satCatalog, sortMode])
 
   return (
-    <aside className="hidden lg:flex flex-col w-[20vw] min-w-[280px] max-w-[380px] h-full shrink-0 flex-none 
+    <aside
+      className="hidden lg:flex flex-col w-full min-w-0 h-full shrink-0 
       bg-[var(--cyber-panel)]/95 border-r border-[var(--cyber-border)]
-      backdrop-blur-xl shadow-[var(--cyber-glow)] text-[var(--cyber-text)] z-20">
+      backdrop-blur-xl shadow-[var(--cyber-glow)] text-[var(--cyber-text)] z-20"
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: "clamp(260px, 20vw, 360px)",
+        minWidth: 0,
+        minHeight: 0,
+        height: "100%",
+        flexShrink: 0,
+        position: "relative",
+        zIndex: 2,
+        overflow: "hidden",
+        background: "rgba(10, 20, 30, 0.95)",
+        borderRight: "1px solid rgba(0, 255, 255, 0.15)",
+        backdropFilter: "blur(20px)",
+        boxShadow: "0 0 20px rgba(0, 255, 255, 0.15)",
+        color: "#d7faff",
+      }}
+    >
 
-      <div className="px-4 pt-4 pb-3 border-b border-white/10">
+      <div
+        className="px-4 pt-4 pb-3 border-b border-white/10"
+        style={{ flexShrink: 0 }}
+      >
         <div className="font-semibold tracking-wide text-cyan-300 text-sm mb-3">
           🛰️ Satelliten-Navigation
         </div>
@@ -79,12 +101,18 @@ export function Sidebar({
         </div>
       </div>
 
-      <div className="px-4 pt-3 pb-2 text-xs text-cyan-300/70 flex items-center gap-2">
+      <div
+        className="px-4 pt-3 pb-2 text-xs text-cyan-300/70 flex items-center gap-2"
+        style={{ flexShrink: 0 }}
+      >
         <span>{visibleCatalog.length} Satelliten</span>
         {normalizedQuery && <span className="text-cyan-300/40">• gefiltert</span>}
       </div>
 
-      <ScrollArea className="px-2 pb-3 flex-1">
+      <ScrollArea
+        className="px-2 pb-3 flex-1"
+        style={{ flex: "1 1 0%", minHeight: 0, overflow: "hidden" }}
+      >
         {visibleCatalog.length === 0 ? (
           <div className="text-xs text-cyan-300/60 px-2 py-1">
             Keine Treffer.
@@ -95,7 +123,7 @@ export function Sidebar({
 
             return (
               <div
-                key={sat.noradId}
+                key={`${sat.noradId}-${sat.name}`}
                 className={`w-full text-left flex items-center justify-between px-2 py-2 rounded-md transition text-xs mb-1 ${
                   isSelected ? "bg-cyan-500/15 border border-cyan-400/40" : "hover:bg-cyan-500/10"
                 }`}
@@ -135,11 +163,17 @@ export function Sidebar({
         )}
       </ScrollArea>
 
-      <div className="px-4 pt-2 pb-1 font-semibold tracking-wide text-cyan-300 text-sm border-t border-white/10">
+      <div
+        className="px-4 pt-2 pb-1 font-semibold tracking-wide text-cyan-300 text-sm border-t border-white/10"
+        style={{ flexShrink: 0 }}
+      >
         ⭐ Favoriten
       </div>
 
-      <ScrollArea className="px-2 pb-3 max-h-52">
+      <ScrollArea
+        className="px-2 pb-3 max-h-52"
+        style={{ flex: "0 0 auto", minHeight: 0, maxHeight: "13rem", overflow: "hidden" }}
+      >
         {favorites.length === 0 && (
           <div className="text-xs text-cyan-300/60 px-2 py-1">
             Noch keine Favoriten.
@@ -152,7 +186,7 @@ export function Sidebar({
 
           return (
             <button
-              key={noradId}
+              key={`fav-${noradId}-${sat.name}`}
               className="w-full flex items-center justify-between px-2 py-2 rounded-md hover:bg-cyan-500/10 cursor-pointer text-xs transition mb-1"
               onClick={() => onSelectFavorite(noradId)}
             >

@@ -2,15 +2,24 @@ import { Navbar } from "./Navbar"
 
 export function AppLayout({ children }) {
   return (
-    <div className="w-full h-full flex flex-col bg-[var(--cyber-bg)] text-[var(--cyber-text)] overflow-hidden">
+    <div
+      className="w-full h-full flex flex-col bg-[var(--cyber-bg)] text-[var(--cyber-text)] overflow-hidden"
+      style={{ display: "flex", flexDirection: "column", width: "100%", height: "100%", overflow: "hidden" }}
+    >
 
       {/* TOP NAVBAR */}
       <Navbar />
 
       {/* MAIN AREA */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div
+        className="flex flex-1 min-h-0 overflow-hidden"
+        style={{ display: "flex", flex: "1 1 auto", minHeight: 0, minWidth: 0, overflow: "hidden" }}
+      >
         {/* PAGE CONTENT */}
-        <main className="flex-1 min-w-0 relative overflow-hidden">
+        <main
+          className="flex-1 min-w-0 relative overflow-hidden"
+          style={{ display: "block", flex: "1 1 auto", minWidth: 0, minHeight: 0, position: "relative", overflow: "hidden" }}
+        >
           {children}
         </main>
       </div>
