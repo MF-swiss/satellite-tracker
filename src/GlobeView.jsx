@@ -297,10 +297,6 @@ export default function GlobeView() {
         if (meta) {
           focusSatellite(meta)
         }
-      } else {
-        setSelectedSat(null)
-        followSatRef.current = null
-        setVisibleOrbit(null)
       }
     }
 
@@ -393,7 +389,7 @@ export default function GlobeView() {
 
       {/* Popup rechts */}
       {selectedSat && (
-        <Card className="absolute right-4 top-4 max-w-xs 
+        <Card className="absolute right-4 top-4 w-[320px] max-w-[calc(100vw-1rem)] max-h-[70vh] overflow-auto
           bg-[var(--cyber-panel)] backdrop-blur-xl 
           border border-[var(--cyber-border)] 
           shadow-[var(--cyber-glow)] text-[var(--cyber-text)] z-20">
@@ -404,6 +400,33 @@ export default function GlobeView() {
             </div>
             <div className="text-xs text-cyan-300/60">
               NORAD ID: {selectedSat.noradId}
+            </div>
+          </div>
+
+          <div className="px-3 pb-2 space-y-1 text-xs">
+            <div className="flex items-start justify-between gap-3">
+              <span className="text-cyan-300/60">Objekt-ID</span>
+              <span className="text-cyan-100 text-right break-all">{selectedSat.objectId ?? "-"}</span>
+            </div>
+
+            <div className="flex items-start justify-between gap-3">
+              <span className="text-cyan-300/60">Orbit</span>
+              <span className="text-cyan-100 text-right">{selectedSat.orbitLine ? "sichtbar" : "versteckt"}</span>
+            </div>
+
+            <div className="flex items-start justify-between gap-3">
+              <span className="text-cyan-300/60">Favorit</span>
+              <span className="text-cyan-100 text-right">
+                {favorites.includes(selectedSat.noradId) ? "Ja" : "Nein"}
+              </span>
+            </div>
+
+            <div className="pt-2 border-t border-white/10">
+              <div className="text-cyan-300/60 mb-1">TLE</div>
+              <div className="rounded-md bg-black/20 border border-cyan-500/10 p-2 text-[10px] font-mono leading-4 break-all text-cyan-100/80">
+                <div>{selectedSat.tle1}</div>
+                <div className="mt-1">{selectedSat.tle2}</div>
+              </div>
             </div>
           </div>
 

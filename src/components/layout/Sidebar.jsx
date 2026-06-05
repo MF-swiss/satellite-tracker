@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react"
 
 import { Button } from "../ui/button"
-import { ScrollArea } from "../ui/scroll-area"
 
 export function Sidebar({
   satCatalog,
@@ -131,7 +130,10 @@ export function Sidebar({
         )}
       </div>
 
-      <ScrollArea className="flex-1 px-2 pb-3" style={{ flex: "1 1 0%", minHeight: 0, overflow: "hidden" }}>
+      <div
+        className="flex-1 px-2 pb-3 overflow-y-auto overflow-x-hidden h-0"
+        style={{ flex: "1 1 0%", minHeight: 0, overflowY: "auto", overflowX: "hidden" }}
+      >
         <div className="px-2 pt-3 pb-2 text-xs text-cyan-300/70 flex items-center gap-2">
           {viewMode === "all" ? (
             <>
@@ -234,7 +236,7 @@ export function Sidebar({
             )
           })
         )}
-      </ScrollArea>
+      </div>
 
     </aside>
   )
