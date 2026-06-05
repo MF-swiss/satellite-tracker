@@ -387,14 +387,20 @@ export default function GlobeView() {
           }}
         />
 
-      {/* Popup rechts */}
+      </div>
+
+      {/* Popup rechts oben */}
       {selectedSat && (
-        <Card className="absolute right-4 top-4 w-[320px] max-w-[calc(100vw-1rem)] max-h-[70vh] overflow-auto
+        <Card
+          className="fixed right-4 top-4 w-[320px] max-w-[calc(100vw-1rem)] max-h-[70vh] overflow-auto
           bg-[var(--cyber-panel)] backdrop-blur-xl 
           border border-[var(--cyber-border)] 
-          shadow-[var(--cyber-glow)] text-[var(--cyber-text)] z-20">
-
+          shadow-[var(--cyber-glow)] text-[var(--cyber-text)] z-50 pointer-events-auto"
+        >
           <div className="px-3 pt-3 pb-1">
+            <div className="text-[10px] uppercase tracking-wider text-cyan-300/50 mb-1">
+              Satellit ausgewählt
+            </div>
             <div className="font-semibold text-sm truncate text-cyan-300">
               {selectedSat.name}
             </div>
@@ -433,8 +439,7 @@ export default function GlobeView() {
           <div className="px-3 pb-2 flex gap-2">
             <Button
               size="sm"
-              className="text-xs border border-cyan-500/40 text-cyan-300 
-                hover:bg-cyan-500/10 transition"
+              className="text-xs border border-cyan-500/40 text-cyan-300 hover:bg-cyan-500/10 transition"
               variant="outline"
               onClick={() => toggleFavorite(selectedSat.noradId)}
             >
@@ -448,6 +453,7 @@ export default function GlobeView() {
               onClick={() => {
                 followSatRef.current = null
                 setSelectedSat(null)
+                setVisibleOrbit(null)
               }}
             >
               Schließen
@@ -455,8 +461,6 @@ export default function GlobeView() {
           </div>
         </Card>
       )}
-
-      </div>
 
     </div>
   )
