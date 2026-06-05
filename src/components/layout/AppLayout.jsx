@@ -1,5 +1,4 @@
 import { Navbar } from "./Navbar"
-import { Sidebar } from "./Sidebar"
 
 export function AppLayout({ children }) {
   return (
@@ -10,15 +9,10 @@ export function AppLayout({ children }) {
 
       {/* MAIN AREA */}
       <div className="flex flex-1 overflow-hidden">
-
-        {/* LEFT SIDEBAR */}
-        <Sidebar />
-
         {/* PAGE CONTENT */}
         <main className="flex-1 relative overflow-hidden">
           {children}
         </main>
-
       </div>
     </div>
   )

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import Globe from "globe.gl"
 import * as THREE from "three"
 import * as satellite from "satellite.js"
@@ -7,18 +7,49 @@ import { Card } from "./components/ui/card"
 import { Button } from "./components/ui/button"
 import { ScrollArea } from "./components/ui/scroll-area"
 import { Sheet, SheetContent, SheetTrigger } from "./components/ui/sheet"
+import { Sidebar } from "./components/layout/Sidebar"
 
 export default function GlobeView() {
   const ref = useRef(null)
 
   const [selectedSat, setSelectedSat] = useState(null)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [sortMode, setSortMode] = useState("name")
+  const [satCatalog, setSatCatalog] = useState([])
   const [favorites, setFavorites] = useState(() => {
     const saved = localStorage.getItem("favorites")
     return saved ? JSON.parse(saved) : []
   })
+  const favoritesRef = useRef(favorites)
 
   const followSatRef = useRef(null)
   const satMeta = useRef(new Map())
+
+  const setVisibleOrbit = useCallback(targetMeta => {
+    for (const meta of satMeta.current.values()) {
+      if (meta.orbitLine) {
+        meta.orbitLine.visible = meta === targetMeta
+      }
+    }
+  }, [])
+
+  const focusSatellite = useCallback(meta => {
+    if (!meta) return
+
+    followSatRef.current = meta.mesh
+    setSelectedSat(meta)
+    setSearchQuery(meta.name)
+    setVisibleOrbit(meta)
+  }, [setVisibleOrbit])
+
+  const handleSelectSatellite = useCallback(sat => {
+    if (!sat?.mesh) return
+
+    const meta = satMeta.current.get(sat.mesh)
+    if (meta) {
+      focusSatellite(meta)
+    }
+  }, [focusSatellite])
 
   // ------------------------------------------------------------
   // GLOBE INITIALISIERUNG
@@ -75,12 +106,24 @@ export default function GlobeView() {
       .then(res => res.json())
       .then(data => {
         const sats = data.filter(s => s.spaceTrack?.TLE_LINE1 && s.spaceTrack?.TLE_LINE2)
+        const catalog = []
 
         sats.forEach(sat => {
           try {
             const tle1 = sat.spaceTrack.TLE_LINE1
             const tle2 = sat.spaceTrack.TLE_LINE2
             const satrec = satellite.twoline2satrec(tle1, tle2)
+
+            // ------------------------------------------------------------
+            // SATELLITENPUNKT
+            // ------------------------------------------------------------
+            const norad = sat.spaceTrack.OBJECT_NUMBER
+
+            const satMesh = new THREE.Mesh(
+              new THREE.SphereGeometry(0.01 * R, 8, 8),
+              new THREE.MeshBasicMaterial({ color: favoritesRef.current.includes(norad) ? "orange" : "yellow" })
+            )
+            satGroup.add(satMesh)
 
             // ------------------------------------------------------------
             // ORBIT BERECHNEN
@@ -115,26 +158,37 @@ export default function GlobeView() {
             if (points.length >= 2) {
               const geometry = new THREE.BufferGeometry().setFromPoints(points)
               const material = new THREE.LineBasicMaterial({ color: "cyan" })
-              orbitGroup.add(new THREE.Line(geometry, material))
+              const orbitLine = new THREE.Line(geometry, material)
+              orbitLine.visible = false
+              orbitGroup.add(orbitLine)
+
+              satMeta.current.set(satMesh, {
+                name: sat.spaceTrack.OBJECT_NAME,
+                noradId: norad,
+                objectId: sat.spaceTrack.OBJECT_ID,
+                tle1,
+                tle2,
+                mesh: satMesh,
+                orbitLine
+              })
             }
 
-            // ------------------------------------------------------------
-            // SATELLITENPUNKT
-            // ------------------------------------------------------------
-            const norad = sat.spaceTrack.OBJECT_NUMBER
-            const isFav = favorites.includes(norad)
+            if (!satMeta.current.has(satMesh)) {
+              satMeta.current.set(satMesh, {
+                name: sat.spaceTrack.OBJECT_NAME,
+                noradId: norad,
+                objectId: sat.spaceTrack.OBJECT_ID,
+                tle1,
+                tle2,
+                mesh: satMesh,
+                orbitLine: null
+              })
+            }
 
-            const satMesh = new THREE.Mesh(
-              new THREE.SphereGeometry(0.01 * R, 8, 8),
-              new THREE.MeshBasicMaterial({ color: isFav ? "orange" : "yellow" })
-            )
-            satGroup.add(satMesh)
-
-            satMeta.current.set(satMesh, {
+            catalog.push({
               name: sat.spaceTrack.OBJECT_NAME,
               noradId: norad,
-              tle1,
-              tle2,
+              objectId: sat.spaceTrack.OBJECT_ID,
               mesh: satMesh
             })
 
@@ -173,6 +227,8 @@ export default function GlobeView() {
             console.warn("Fehler bei Satellit:", err)
           }
         })
+
+        setSatCatalog(catalog)
       })
 
     // ------------------------------------------------------------
@@ -190,18 +246,18 @@ export default function GlobeView() {
         const mesh = intersects[0].object
         const meta = satMeta.current.get(mesh)
         if (meta) {
-          setSelectedSat(meta)
-          followSatRef.current = mesh
+          focusSatellite(meta)
         }
       } else {
         setSelectedSat(null)
         followSatRef.current = null
+        setVisibleOrbit(null)
       }
     }
 
     renderer.domElement.addEventListener("pointerdown", onClick)
     return () => renderer.domElement.removeEventListener("pointerdown", onClick)
-  }, [])
+  }, [focusSatellite, setVisibleOrbit])
 
   // ------------------------------------------------------------
   // FAVORITEN
@@ -215,6 +271,7 @@ export default function GlobeView() {
     }
 
     setFavorites(updated)
+    favoritesRef.current = updated
     localStorage.setItem("favorites", JSON.stringify(updated))
 
     for (const meta of satMeta.current.values()) {
@@ -227,11 +284,39 @@ export default function GlobeView() {
   function focusFavorite(noradId) {
     for (const meta of satMeta.current.values()) {
       if (meta.noradId === noradId) {
-        followSatRef.current = meta.mesh
-        setSelectedSat(meta)
+        focusSatellite(meta)
       }
     }
   }
+
+  const normalizedQuery = searchQuery.trim().toLowerCase()
+  const compareCatalog = (a, b) => {
+    if (sortMode === "norad") {
+      return Number(a.noradId) - Number(b.noradId)
+    }
+
+    if (sortMode === "objectId") {
+      return (a.objectId ?? "").localeCompare(b.objectId ?? "")
+    }
+
+    return (a.name ?? "").localeCompare(b.name ?? "")
+  }
+
+  const visibleCatalog = satCatalog
+    .filter(sat => {
+      if (!normalizedQuery) return true
+
+      const name = sat.name?.toLowerCase() ?? ""
+      const objectId = sat.objectId?.toLowerCase() ?? ""
+      const noradId = String(sat.noradId)
+
+      return (
+        name.includes(normalizedQuery) ||
+        objectId.includes(normalizedQuery) ||
+        noradId.includes(normalizedQuery)
+      )
+    })
+    .sort(compareCatalog)
 
   // ------------------------------------------------------------
   // UI RENDER
@@ -242,62 +327,14 @@ export default function GlobeView() {
       {/* Globe */}
       <div ref={ref} className="absolute inset-0 z-0" />
 
-      {/* Desktop Sidebar */}
-      <Card className="hidden lg:flex flex-col gap-2 absolute left-4 top-4 w-64 
-        max-h-[80vh] bg-[var(--cyber-panel)] backdrop-blur-xl 
-        border border-[var(--cyber-border)] shadow-[var(--cyber-glow)] 
-        text-[var(--cyber-text)] z-20">
-
-        <div className="px-3 pt-3 pb-1 font-semibold text-sm flex items-center gap-2">
-          <span>⭐ Favoriten</span>
-          <span className="ml-auto text-xs text-cyan-300">
-            {favorites.length} ausgewählt
-          </span>
-        </div>
-
-        <ScrollArea className="px-2 pb-3">
-          {favorites.length === 0 && (
-            <div className="text-xs text-cyan-300/60 px-2 py-1">
-              Noch keine Favoriten. Wähle einen Satelliten im Popup.
-            </div>
-          )}
-
-          {favorites.map(noradId => {
-            const meta = [...satMeta.current.values()].find(m => m.noradId === noradId)
-            if (!meta) return null
-
-            return (
-              <div
-                key={noradId}
-                className="flex items-center justify-between px-2 py-1.5 rounded-md 
-                  hover:bg-cyan-500/10 cursor-pointer text-xs transition"
-                onClick={() => focusFavorite(noradId)}
-              >
-                <div className="flex flex-col">
-                  <span className="font-medium truncate max-w-[140px]">
-                    {meta.name}
-                  </span>
-                  <span className="text-[10px] text-cyan-300/60">
-                    NORAD {noradId}
-                  </span>
-                </div>
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 text-cyan-300 hover:bg-cyan-500/10"
-                  onClick={e => {
-                    e.stopPropagation()
-                    toggleFavorite(noradId)
-                  }}
-                >
-                  ✕
-                </Button>
-              </div>
-            )
-          })}
-        </ScrollArea>
-      </Card>
+      <Sidebar
+        satCatalog={satCatalog}
+        selectedSat={selectedSat}
+        favorites={favorites}
+        onSelectSatellite={handleSelectSatellite}
+        onToggleFavorite={toggleFavorite}
+        onSelectFavorite={focusFavorite}
+      />
 
       {/* Mobile Sidebar */}
       <Sheet>
@@ -310,7 +347,7 @@ export default function GlobeView() {
               bg-[var(--cyber-panel)] backdrop-blur-xl 
               hover:bg-cyan-500/10 transition"
           >
-            ⭐ Favoriten
+            🛰️ Satelliten
           </Button>
         </SheetTrigger>
 
@@ -319,51 +356,115 @@ export default function GlobeView() {
           border-r border-[var(--cyber-border)] 
           shadow-[var(--cyber-glow)] text-[var(--cyber-text)]">
 
-          <div className="font-semibold text-sm mb-2 text-cyan-300">
+          <div className="mb-3 border-b border-white/10 pb-3">
+            <div className="font-semibold text-sm mb-2 text-cyan-300">
+              🛰️ Satelliten-Navigation
+            </div>
+
+            <input
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Suchen: Name, Objekt-ID, NORAD"
+              className="w-full rounded-md border border-cyan-500/30 bg-black/20 px-3 py-2 text-xs text-[var(--cyber-text)] outline-none placeholder:text-cyan-300/40 focus:border-cyan-300/70"
+            />
+
+            <div className="mt-3 flex items-center gap-2">
+              <label className="text-[10px] uppercase tracking-wider text-cyan-300/60">
+                Sortierung
+              </label>
+              <select
+                value={sortMode}
+                onChange={e => setSortMode(e.target.value)}
+                className="ml-auto rounded-md border border-cyan-500/30 bg-black/20 px-2 py-1 text-xs text-[var(--cyber-text)] outline-none"
+              >
+                <option value="name">Name</option>
+                <option value="norad">NORAD</option>
+                <option value="objectId">Objekt-ID</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="mb-2 text-xs text-cyan-300/70 flex items-center gap-2">
+            <span>{visibleCatalog.length} Satelliten</span>
+            {normalizedQuery && <span className="text-cyan-300/40">• gefiltert</span>}
+          </div>
+
+          <ScrollArea className="h-[52vh] mb-3">
+            {visibleCatalog.length === 0 ? (
+              <div className="text-xs text-cyan-300/60 px-1 py-1">
+                Keine Treffer.
+              </div>
+            ) : (
+              visibleCatalog.slice(0, 200).map(sat => {
+                const isSelected = selectedSat?.noradId === sat.noradId
+                return (
+                  <button
+                    key={sat.noradId}
+                    className={`w-full text-left flex items-center justify-between px-2 py-2 rounded-md transition text-xs mb-1 ${
+                      isSelected ? "bg-cyan-500/15 border border-cyan-400/40" : "hover:bg-cyan-500/10"
+                    }`}
+                    onClick={() => focusSatellite(satMeta.current.get(sat.mesh) ?? sat)}
+                  >
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-medium truncate max-w-[160px]">
+                        {sat.name}
+                      </span>
+                      <span className="text-[10px] text-cyan-300/60">
+                        NORAD {sat.noradId}
+                      </span>
+                    </div>
+                    <span className="text-cyan-300/70 ml-2">›</span>
+                  </button>
+                )
+              })
+            )}
+          </ScrollArea>
+
+          <div className="font-semibold text-sm mb-2 text-cyan-300 border-t border-white/10 pt-3">
             Favoriten
           </div>
 
-          <ScrollArea className="h-[70vh]">
-            {favorites.length === 0 && (
+          <ScrollArea className="h-[18vh]">
+            {favorites.length === 0 ? (
               <div className="text-xs text-cyan-300/60 px-1 py-1">
                 Noch keine Favoriten.
               </div>
-            )}
+            ) : (
+              favorites.map(noradId => {
+                const meta = [...satMeta.current.values()].find(m => m.noradId === noradId)
+                if (!meta) return null
 
-            {favorites.map(noradId => {
-              const meta = [...satMeta.current.values()].find(m => m.noradId === noradId)
-              if (!meta) return null
-
-              return (
-                <div
-                  key={noradId}
-                  className="flex items-center justify-between px-2 py-1.5 rounded-md 
-                    hover:bg-cyan-500/10 cursor-pointer text-xs transition"
-                  onClick={() => focusFavorite(noradId)}
-                >
-                  <div className="flex flex-col">
-                    <span className="font-medium truncate max-w-[140px]">
-                      {meta.name}
-                    </span>
-                    <span className="text-[10px] text-cyan-300/60">
-                      NORAD {noradId}
-                    </span>
-                  </div>
-
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-cyan-300 hover:bg-cyan-500/10"
-                    onClick={e => {
-                      e.stopPropagation()
-                      toggleFavorite(noradId)
-                    }}
+                return (
+                  <div
+                    key={noradId}
+                    className="flex items-center justify-between px-2 py-1.5 rounded-md 
+                      hover:bg-cyan-500/10 cursor-pointer text-xs transition"
+                    onClick={() => focusFavorite(noradId)}
                   >
-                    ✕
-                  </Button>
-                </div>
-              )
-            })}
+                    <div className="flex flex-col">
+                      <span className="font-medium truncate max-w-[140px]">
+                        {meta.name}
+                      </span>
+                      <span className="text-[10px] text-cyan-300/60">
+                        NORAD {noradId}
+                      </span>
+                    </div>
+
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-cyan-300 hover:bg-cyan-500/10"
+                      onClick={e => {
+                        e.stopPropagation()
+                        toggleFavorite(noradId)
+                      }}
+                    >
+                      ✕
+                    </Button>
+                  </div>
+                )
+              })
+            )}
           </ScrollArea>
         </SheetContent>
       </Sheet>
