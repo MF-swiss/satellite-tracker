@@ -47,7 +47,7 @@ export function Sidebar({
   }, [normalizedQuery, satCatalog, sortMode])
 
   return (
-    <aside className="hidden lg:flex flex-col w-72 h-full 
+    <aside className="hidden lg:flex flex-col w-[20vw] min-w-[280px] max-w-[380px] h-full shrink-0 flex-none 
       bg-[var(--cyber-panel)]/95 border-r border-[var(--cyber-border)]
       backdrop-blur-xl shadow-[var(--cyber-glow)] text-[var(--cyber-text)] z-20">
 

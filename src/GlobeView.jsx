@@ -5,16 +5,12 @@ import * as satellite from "satellite.js"
 
 import { Card } from "./components/ui/card"
 import { Button } from "./components/ui/button"
-import { ScrollArea } from "./components/ui/scroll-area"
-import { Sheet, SheetContent, SheetTrigger } from "./components/ui/sheet"
 import { Sidebar } from "./components/layout/Sidebar"
 
 export default function GlobeView() {
   const ref = useRef(null)
 
   const [selectedSat, setSelectedSat] = useState(null)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [sortMode, setSortMode] = useState("name")
   const [satCatalog, setSatCatalog] = useState([])
   const [favorites, setFavorites] = useState(() => {
     const saved = localStorage.getItem("favorites")
@@ -38,7 +34,6 @@ export default function GlobeView() {
 
     followSatRef.current = meta.mesh
     setSelectedSat(meta)
-    setSearchQuery(meta.name)
     setVisibleOrbit(meta)
   }, [setVisibleOrbit])
 
@@ -289,43 +284,11 @@ export default function GlobeView() {
     }
   }
 
-  const normalizedQuery = searchQuery.trim().toLowerCase()
-  const compareCatalog = (a, b) => {
-    if (sortMode === "norad") {
-      return Number(a.noradId) - Number(b.noradId)
-    }
-
-    if (sortMode === "objectId") {
-      return (a.objectId ?? "").localeCompare(b.objectId ?? "")
-    }
-
-    return (a.name ?? "").localeCompare(b.name ?? "")
-  }
-
-  const visibleCatalog = satCatalog
-    .filter(sat => {
-      if (!normalizedQuery) return true
-
-      const name = sat.name?.toLowerCase() ?? ""
-      const objectId = sat.objectId?.toLowerCase() ?? ""
-      const noradId = String(sat.noradId)
-
-      return (
-        name.includes(normalizedQuery) ||
-        objectId.includes(normalizedQuery) ||
-        noradId.includes(normalizedQuery)
-      )
-    })
-    .sort(compareCatalog)
-
   // ------------------------------------------------------------
   // UI RENDER
   // ------------------------------------------------------------
   return (
-    <div className="relative w-full h-full overflow-hidden">
-
-      {/* Globe */}
-      <div ref={ref} className="absolute inset-0 z-0" />
+    <div className="relative w-full h-full overflow-hidden flex min-h-0">
 
       <Sidebar
         satCatalog={satCatalog}
@@ -336,138 +299,9 @@ export default function GlobeView() {
         onSelectFavorite={focusFavorite}
       />
 
-      {/* Mobile Sidebar */}
-      <Sheet>
-        <SheetTrigger asChild>
-          <Button
-            size="sm"
-            variant="outline"
-            className="lg:hidden absolute left-4 top-4 z-30 
-              border border-cyan-500/40 text-cyan-300 
-              bg-[var(--cyber-panel)] backdrop-blur-xl 
-              hover:bg-cyan-500/10 transition"
-          >
-            🛰️ Satelliten
-          </Button>
-        </SheetTrigger>
-
-        <SheetContent side="left" className="w-64 p-3 
-          bg-[var(--cyber-panel)] backdrop-blur-xl 
-          border-r border-[var(--cyber-border)] 
-          shadow-[var(--cyber-glow)] text-[var(--cyber-text)]">
-
-          <div className="mb-3 border-b border-white/10 pb-3">
-            <div className="font-semibold text-sm mb-2 text-cyan-300">
-              🛰️ Satelliten-Navigation
-            </div>
-
-            <input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Suchen: Name, Objekt-ID, NORAD"
-              className="w-full rounded-md border border-cyan-500/30 bg-black/20 px-3 py-2 text-xs text-[var(--cyber-text)] outline-none placeholder:text-cyan-300/40 focus:border-cyan-300/70"
-            />
-
-            <div className="mt-3 flex items-center gap-2">
-              <label className="text-[10px] uppercase tracking-wider text-cyan-300/60">
-                Sortierung
-              </label>
-              <select
-                value={sortMode}
-                onChange={e => setSortMode(e.target.value)}
-                className="ml-auto rounded-md border border-cyan-500/30 bg-black/20 px-2 py-1 text-xs text-[var(--cyber-text)] outline-none"
-              >
-                <option value="name">Name</option>
-                <option value="norad">NORAD</option>
-                <option value="objectId">Objekt-ID</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="mb-2 text-xs text-cyan-300/70 flex items-center gap-2">
-            <span>{visibleCatalog.length} Satelliten</span>
-            {normalizedQuery && <span className="text-cyan-300/40">• gefiltert</span>}
-          </div>
-
-          <ScrollArea className="h-[52vh] mb-3">
-            {visibleCatalog.length === 0 ? (
-              <div className="text-xs text-cyan-300/60 px-1 py-1">
-                Keine Treffer.
-              </div>
-            ) : (
-              visibleCatalog.slice(0, 200).map(sat => {
-                const isSelected = selectedSat?.noradId === sat.noradId
-                return (
-                  <button
-                    key={sat.noradId}
-                    className={`w-full text-left flex items-center justify-between px-2 py-2 rounded-md transition text-xs mb-1 ${
-                      isSelected ? "bg-cyan-500/15 border border-cyan-400/40" : "hover:bg-cyan-500/10"
-                    }`}
-                    onClick={() => focusSatellite(satMeta.current.get(sat.mesh) ?? sat)}
-                  >
-                    <div className="flex flex-col min-w-0">
-                      <span className="font-medium truncate max-w-[160px]">
-                        {sat.name}
-                      </span>
-                      <span className="text-[10px] text-cyan-300/60">
-                        NORAD {sat.noradId}
-                      </span>
-                    </div>
-                    <span className="text-cyan-300/70 ml-2">›</span>
-                  </button>
-                )
-              })
-            )}
-          </ScrollArea>
-
-          <div className="font-semibold text-sm mb-2 text-cyan-300 border-t border-white/10 pt-3">
-            Favoriten
-          </div>
-
-          <ScrollArea className="h-[18vh]">
-            {favorites.length === 0 ? (
-              <div className="text-xs text-cyan-300/60 px-1 py-1">
-                Noch keine Favoriten.
-              </div>
-            ) : (
-              favorites.map(noradId => {
-                const meta = [...satMeta.current.values()].find(m => m.noradId === noradId)
-                if (!meta) return null
-
-                return (
-                  <div
-                    key={noradId}
-                    className="flex items-center justify-between px-2 py-1.5 rounded-md 
-                      hover:bg-cyan-500/10 cursor-pointer text-xs transition"
-                    onClick={() => focusFavorite(noradId)}
-                  >
-                    <div className="flex flex-col">
-                      <span className="font-medium truncate max-w-[140px]">
-                        {meta.name}
-                      </span>
-                      <span className="text-[10px] text-cyan-300/60">
-                        NORAD {noradId}
-                      </span>
-                    </div>
-
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6 text-cyan-300 hover:bg-cyan-500/10"
-                      onClick={e => {
-                        e.stopPropagation()
-                        toggleFavorite(noradId)
-                      }}
-                    >
-                      ✕
-                    </Button>
-                  </div>
-                )
-              })
-            )}
-          </ScrollArea>
-        </SheetContent>
-      </Sheet>
+      {/* Globe */}
+      <div className="relative flex-1 min-w-0 h-full overflow-hidden">
+        <div ref={ref} className="w-full h-full z-0" />
 
       {/* Popup rechts */}
       {selectedSat && (
@@ -510,6 +344,8 @@ export default function GlobeView() {
           </div>
         </Card>
       )}
+
+      </div>
 
     </div>
   )
