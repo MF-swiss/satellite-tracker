@@ -26,8 +26,9 @@ export default function GlobeView() {
     try {
       const parsed = JSON.parse(saved)
       if (Array.isArray(parsed)) {
-        const first = toNoradId(parsed[0])
-        return first !== null ? [first] : []
+        return parsed
+          .map(toNoradId)
+          .filter(value => value !== null)
       }
 
       const first = toNoradId(parsed)
@@ -311,21 +312,27 @@ export default function GlobeView() {
     }
   }, [focusSatellite, setVisibleOrbit])
 
+  useEffect(() => {
+    for (const meta of satMeta.current.values()) {
+      if (meta?.mesh?.material?.color) {
+        meta.mesh.material.color.set(favorites.includes(meta.noradId) ? "orange" : "yellow")
+      }
+    }
+  }, [favorites])
+
   // ------------------------------------------------------------
   // FAVORITEN
   // ------------------------------------------------------------
   function toggleFavorite(noradId) {
-    const updated = favorites.includes(noradId) ? [] : [noradId]
+    setFavorites(current => {
+      const updated = current.includes(noradId)
+        ? current.filter(id => id !== noradId)
+        : [...current, noradId]
 
-    setFavorites(updated)
-    favoritesRef.current = updated
-    localStorage.setItem("favorites", JSON.stringify(updated))
-
-    for (const meta of satMeta.current.values()) {
-      if (meta.noradId === noradId) {
-        meta.mesh.material.color.set(updated.includes(noradId) ? "orange" : "yellow")
-      }
-    }
+      favoritesRef.current = updated
+      localStorage.setItem("favorites", JSON.stringify(updated))
+      return updated
+    })
   }
 
   function focusFavorite(noradId) {
