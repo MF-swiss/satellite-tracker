@@ -10,11 +10,31 @@ import { Sidebar } from "./components/layout/Sidebar"
 export default function GlobeView() {
   const ref = useRef(null)
 
+  const toNoradId = value => {
+    if (value === null || value === undefined || value === "") return null
+
+    const num = Number(value)
+    return Number.isFinite(num) ? num : null
+  }
+
   const [selectedSat, setSelectedSat] = useState(null)
   const [satCatalog, setSatCatalog] = useState([])
   const [favorites, setFavorites] = useState(() => {
     const saved = localStorage.getItem("favorites")
-    return saved ? JSON.parse(saved) : []
+    if (!saved) return []
+
+    try {
+      const parsed = JSON.parse(saved)
+      if (Array.isArray(parsed)) {
+        const first = toNoradId(parsed[0])
+        return first !== null ? [first] : []
+      }
+
+      const first = toNoradId(parsed)
+      return first !== null ? [first] : []
+    } catch {
+      return []
+    }
   })
   const favoritesRef = useRef(favorites)
 
@@ -71,6 +91,25 @@ export default function GlobeView() {
     renderer.domElement.style.height = "100%"
     renderer.domElement.style.display = "block"
 
+    const resizeGlobe = () => {
+      if (!ref.current) return
+
+      const width = ref.current.clientWidth
+      const height = ref.current.clientHeight
+
+      if (width > 0 && height > 0) {
+        globe.width(width)
+        globe.height(height)
+        renderer.setSize(width, height, false)
+      }
+    }
+
+    resizeGlobe()
+
+    const resizeObserver = new ResizeObserver(resizeGlobe)
+    resizeObserver.observe(ref.current)
+    window.addEventListener("resize", resizeGlobe)
+
     const orbitGroup = new THREE.Group()
     const satGroup = new THREE.Group()
     scene.add(orbitGroup)
@@ -122,7 +161,11 @@ export default function GlobeView() {
             // ------------------------------------------------------------
             // SATELLITENPUNKT
             // ------------------------------------------------------------
-            const norad = sat.spaceTrack.OBJECT_NUMBER
+            const norad = toNoradId(sat.spaceTrack.NORAD_CAT_ID ?? sat.spaceTrack.OBJECT_NUMBER)
+
+            if (norad === null) {
+              return
+            }
 
             const satMesh = new THREE.Mesh(
               new THREE.SphereGeometry(0.01 * R, 8, 8),
@@ -261,19 +304,18 @@ export default function GlobeView() {
     }
 
     renderer.domElement.addEventListener("pointerdown", onClick)
-    return () => renderer.domElement.removeEventListener("pointerdown", onClick)
+    return () => {
+      renderer.domElement.removeEventListener("pointerdown", onClick)
+      resizeObserver.disconnect()
+      window.removeEventListener("resize", resizeGlobe)
+    }
   }, [focusSatellite, setVisibleOrbit])
 
   // ------------------------------------------------------------
   // FAVORITEN
   // ------------------------------------------------------------
   function toggleFavorite(noradId) {
-    let updated
-    if (favorites.includes(noradId)) {
-      updated = favorites.filter(id => id !== noradId)
-    } else {
-      updated = [...favorites, noradId]
-    }
+    const updated = favorites.includes(noradId) ? [] : [noradId]
 
     setFavorites(updated)
     favoritesRef.current = updated
@@ -302,7 +344,7 @@ export default function GlobeView() {
       className="relative w-full h-full overflow-hidden lg:grid lg:grid-cols-[20vw_minmax(0,1fr)] min-h-0"
       style={{
         display: "grid",
-        gridTemplateColumns: "clamp(260px, 20vw, 360px) minmax(0, 1fr)",
+        gridTemplateColumns: "15vw minmax(0, 1fr)",
         width: "100%",
         height: "100%",
         minHeight: 0,
@@ -322,9 +364,25 @@ export default function GlobeView() {
       {/* Globe */}
       <div
         className="relative min-w-0 h-full overflow-hidden"
-        style={{ position: "relative", minWidth: 0, minHeight: 0, overflow: "hidden" }}
+        style={{
+          position: "relative",
+          minWidth: 0,
+          minHeight: 0,
+          overflow: "hidden",
+          display: "block",
+        }}
       >
-        <div ref={ref} className="w-full h-full z-0" style={{ width: "100%", height: "100%", position: "relative" }} />
+        <div
+          ref={ref}
+          className="w-full h-full z-0"
+          style={{
+            width: "100%",
+            height: "100%",
+            position: "absolute",
+            inset: 0,
+            margin: 0,
+          }}
+        />
 
       {/* Popup rechts */}
       {selectedSat && (

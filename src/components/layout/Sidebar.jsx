@@ -54,7 +54,7 @@ export function Sidebar({
       style={{
         display: "flex",
         flexDirection: "column",
-        width: "clamp(260px, 20vw, 360px)",
+        width: "15vw",
         minWidth: 0,
         minHeight: 0,
         height: "100%",
@@ -185,10 +185,12 @@ export function Sidebar({
           if (!sat) return null
 
           return (
-            <button
+            <div
               key={`fav-${noradId}-${sat.name}`}
               className="w-full flex items-center justify-between px-2 py-2 rounded-md hover:bg-cyan-500/10 cursor-pointer text-xs transition mb-1"
               onClick={() => onSelectFavorite(noradId)}
+              role="button"
+              tabIndex={0}
             >
               <div className="flex flex-col min-w-0 text-left">
                 <span className="font-medium truncate max-w-[180px]">
@@ -210,7 +212,7 @@ export function Sidebar({
               >
                 ✕
               </Button>
-            </button>
+            </div>
           )
         })}
       </ScrollArea>
