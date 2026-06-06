@@ -31,6 +31,7 @@ export function Sidebar({
       )
     })
 
+    
     const sorted = [...filtered].sort((a, b) => {
       if (sortMode === "norad") {
         return Number(a.noradId) - Number(b.noradId)
